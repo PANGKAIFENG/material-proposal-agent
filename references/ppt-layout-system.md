@@ -176,6 +176,19 @@ This keeps generation stable.
 
 ## Layout decision rules
 
+### Source-aware deck planning
+
+For `pdf` sessions:
+
+- add an `inspiration_moodboard` slide before the strategy summary
+- prefer denser collage layouts when at least 3 visual assets exist
+- keep the strategy summary as a separate slide instead of mixing it into the moodboard
+
+For `text` sessions:
+
+- skip the inspiration moodboard by default
+- start from `summary`, `color_reference`, and `fabric_showcase`
+
 ### When assets are image-heavy
 
 Prefer:
@@ -228,6 +241,24 @@ Render the slide as image-led:
 ### Too many candidate assets
 
 Split across multiple `comparison_board` or `fabric_showcase` slides.
+
+Practical rule:
+
+- 2-4 candidates: one comparison board is enough
+- 5-6 candidates: split into 2 comparison boards of `3 + 2` or `3 + 3`
+- 7+ candidates: split into boards of 4
+
+Do not create a comparison board with only one candidate.
+
+### Too many detailed showcase slides
+
+Do not create a long deck just because many candidates were selected.
+
+Practical rule:
+
+- up to 2 selected candidates: show all as detailed showcases
+- 3-4 selected candidates: keep 3 detailed showcases
+- 5+ selected candidates: keep 4 detailed showcases and let comparison boards carry the rest
 
 ### Very uneven image ratios
 

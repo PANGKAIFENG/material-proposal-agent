@@ -8,6 +8,24 @@ function normalizeProposalTitle(theme) {
   return theme.endsWith("提案") ? theme : `${theme}面料提案`;
 }
 
+function chunk(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function groupCandidatesForComparison(items) {
+  if (items.length <= 4) {
+    return [items];
+  }
+  if (items.length <= 6) {
+    return chunk(items, 3);
+  }
+  return chunk(items, 4);
+}
+
 function buildPaletteAssets(colors) {
   return colors.slice(0, 5).map((color, index) => ({
     id: `palette-${index + 1}`,
@@ -17,6 +35,25 @@ function buildPaletteAssets(colors) {
     priority: index === 0 ? "primary" : "accent",
     tags: ["palette"]
   }));
+}
+
+function selectCandidates(session) {
+  const selected =
+    session.selectedIds.length > 0
+      ? session.candidates.filter((item) => session.selectedIds.includes(item.id))
+      : session.candidates.slice(0, 4);
+
+  return selected.length > 0 ? selected : session.candidates.slice(0, 2);
+}
+
+function decideShowcaseLimit(selectedCount) {
+  if (selectedCount <= 2) {
+    return selectedCount;
+  }
+  if (selectedCount <= 4) {
+    return 3;
+  }
+  return 4;
 }
 
 function createCoverSlide(session, selected) {
@@ -80,7 +117,7 @@ function createCoverSlide(session, selected) {
   };
 }
 
-function createNarrativeSlide(session, selected) {
+function createMoodboardSlide(session, selected) {
   const moodAssets = selected.slice(0, 3).map((candidate, index) => ({
     id: `${candidate.id}-mood-${index + 1}`,
     type: index === 0 ? "hero_model" : "mood_image",
@@ -91,40 +128,94 @@ function createNarrativeSlide(session, selected) {
     tags: ["candidate", candidate.id]
   }));
 
-  const narrativeLines = [
-    `风格关键词：${joinOrFallback(session.brief.styleKeywords, "未指定")}`,
-    `材质方向：${joinOrFallback(session.brief.materialDirection, "待明确")}`,
-    `肌理与整理：${joinOrFallback(session.brief.textureAndFinish, "待明确")}`,
-    `性能：${joinOrFallback(session.brief.performance, "待明确")}`
-  ];
-
   return {
-    slideType: session.sourceType === "pdf" ? "inspiration_moodboard" : "summary",
-    title: session.sourceType === "pdf" ? "INSPIRATION" : "需求与策略摘要",
+    slideType: "inspiration_moodboard",
+    title: "INSPIRATION",
     subtitle: session.brief.summary,
-    body: narrativeLines,
+    body: [
+      `风格关键词：${joinOrFallback(session.brief.styleKeywords, "未指定")}`,
+      `材质方向：${joinOrFallback(session.brief.materialDirection, "待明确")}`,
+      `肌理与整理：${joinOrFallback(session.brief.textureAndFinish, "待明确")}`
+    ],
     imagePath: moodAssets[0]?.path || "",
     layoutIntent: {
       visualFocus: "hero_story",
-      density: moodAssets.length >= 3 ? "dense" : "medium",
+      density:
+        moodAssets.length >= 3 ? "dense" : moodAssets.length === 2 ? "medium" : "light",
       composition:
-        session.sourceType === "pdf" ? "collage_with_copy" : "left_text_right_image"
+        moodAssets.length >= 2 ? "collage_with_copy" : "left_text_right_image"
     },
     assets: moodAssets,
     textBlocks: [
       {
         role: "section_label",
-        content: session.sourceType === "pdf" ? "INSPIRATION" : "SUMMARY",
+        content: "INSPIRATION",
         emphasis: "strong"
       },
       {
         role: "body",
-        content: narrativeLines.join("；"),
+        content: [
+          `风格关键词：${joinOrFallback(session.brief.styleKeywords, "未指定")}`,
+          `材质方向：${joinOrFallback(session.brief.materialDirection, "待明确")}`,
+          `肌理与整理：${joinOrFallback(session.brief.textureAndFinish, "待明确")}`
+        ].join("；"),
         emphasis: "normal"
       }
     ],
     notes: {
-      pageFamily: session.sourceType === "pdf" ? "moodboard" : "summary"
+      pageFamily: "moodboard"
+    }
+  };
+}
+
+function createSummarySlide(session, selected) {
+  const summaryAssets = selected.slice(0, 2).map((candidate, index) => ({
+    id: `${candidate.id}-summary-${index + 1}`,
+    type: index === 0 ? "hero_model" : "supporting_image",
+    path: candidate.imagePath,
+    caption: candidate.title,
+    priority: index === 0 ? "primary" : "secondary",
+    aspectRatio: "portrait",
+    tags: ["candidate", candidate.id]
+  }));
+
+  const summaryLines = [
+    `主题：${session.brief.theme}`,
+    `风格关键词：${joinOrFallback(session.brief.styleKeywords, "未指定")}`,
+    `材质方向：${joinOrFallback(session.brief.materialDirection, "待明确")}`,
+    `肌理与整理：${joinOrFallback(session.brief.textureAndFinish, "待明确")}`,
+    `性能：${joinOrFallback(session.brief.performance, "待明确")}`,
+    `预算：${session.brief.budget || "未指定"}`,
+    `约束：${joinOrFallback(session.brief.constraints, "未指定")}`,
+    `排除项：${joinOrFallback(session.brief.exclusions, "无")}`
+  ];
+
+  return {
+    slideType: "summary",
+    title: "需求与策略摘要",
+    subtitle: session.brief.summary,
+    body: summaryLines,
+    imagePath: summaryAssets[0]?.path || "",
+    layoutIntent: {
+      visualFocus: "hero_story",
+      density: summaryAssets.length >= 2 ? "medium" : "light",
+      composition: "left_text_right_image"
+    },
+    assets: [...summaryAssets, ...buildPaletteAssets(session.brief.colorPalette)],
+    textBlocks: [
+      {
+        role: "section_label",
+        content: "SUMMARY",
+        emphasis: "strong"
+      },
+      {
+        role: "body",
+        content: summaryLines.join("；"),
+        emphasis: "normal"
+      }
+    ],
+    notes: {
+      pageFamily: "summary"
     }
   };
 }
@@ -155,8 +246,10 @@ function createColorSlide(session, selected) {
     imagePath: moodAssets[0]?.path || "",
     layoutIntent: {
       visualFocus: "color_story",
-      density: "medium",
-      composition: "banded_color_story"
+      density:
+        moodAssets.length >= 3 ? "dense" : moodAssets.length >= 1 ? "medium" : "light",
+      composition:
+        moodAssets.length >= 2 ? "banded_color_story" : "left_text_right_image"
     },
     assets: [...moodAssets, ...buildPaletteAssets(session.brief.colorPalette)],
     textBlocks: [
@@ -177,24 +270,33 @@ function createColorSlide(session, selected) {
   };
 }
 
-function createComparisonSlide(selected) {
+function createComparisonSlides(selected) {
   if (selected.length < 2) {
-    return null;
+    return [];
   }
 
-  return {
+  return groupCandidatesForComparison(selected)
+    .filter((group) => group.length > 1)
+    .map((group, groupIndex, groups) => ({
     slideType: "comparison_board",
-    title: "OPTION BOARD",
-    subtitle: "候选方向对比",
-    body: selected.slice(0, 4).map((candidate) => `${candidate.id} ${candidate.title}`),
-    imagePath: selected[0]?.imagePath || "",
+    title:
+      groups.length > 1
+        ? `OPTION BOARD ${groupIndex + 1}`
+        : "OPTION BOARD",
+    subtitle:
+      groups.length > 1
+        ? `候选方向对比 ${groupIndex + 1}/${groups.length}`
+        : "候选方向对比",
+    body: group.map((candidate) => `${candidate.id} ${candidate.title}`),
+    imagePath: group[0]?.imagePath || "",
     layoutIntent: {
       visualFocus: "product_mix",
-      density: selected.length >= 4 ? "dense" : "medium",
+      density:
+        group.length >= 4 ? "dense" : group.length === 3 ? "medium" : "light",
       composition: "grid_showcase"
     },
-    assets: selected.slice(0, 4).map((candidate, index) => ({
-      id: `${candidate.id}-comparison-${index + 1}`,
+    assets: group.map((candidate, index) => ({
+      id: `${candidate.id}-comparison-${groupIndex + 1}-${index + 1}`,
       type: "supporting_image",
       path: candidate.imagePath,
       caption: `${candidate.id} ${candidate.title}`,
@@ -205,7 +307,10 @@ function createComparisonSlide(selected) {
     textBlocks: [
       {
         role: "title",
-        content: "OPTION BOARD",
+        content:
+          groups.length > 1
+            ? `OPTION BOARD ${groupIndex + 1}`
+            : "OPTION BOARD",
         emphasis: "hero"
       },
       {
@@ -215,9 +320,10 @@ function createComparisonSlide(selected) {
       }
     ],
     notes: {
-      pageFamily: "comparison"
+      pageFamily: "comparison",
+      groupIndex: String(groupIndex + 1)
     }
-  };
+    }));
 }
 
 function createShowcaseSlide(session, candidate, index) {
@@ -234,8 +340,8 @@ function createShowcaseSlide(session, candidate, index) {
     imagePath: candidate.imagePath,
     layoutIntent: {
       visualFocus: "fabric_texture",
-      density: "medium",
-      composition: "split_story"
+      density: candidate.sellingPoints.length >= 3 ? "medium" : "light",
+      composition: candidate.imagePath ? "split_story" : "left_text_right_image"
     },
     assets: [
       {
@@ -273,13 +379,22 @@ function createShowcaseSlide(session, candidate, index) {
   };
 }
 
+function createShowcaseSlides(session, selected) {
+  const showcaseLimit = decideShowcaseLimit(selected.length);
+  return selected
+    .slice(0, showcaseLimit)
+    .map((candidate, index) => createShowcaseSlide(session, candidate, index));
+}
+
 function createClosingSlide(session) {
+  const selectedCount = session.selectedIds.length || session.candidates.length;
   return {
     slideType: "closing",
     title: "Thank you",
     subtitle: "",
     body: [
       "如需继续细化颜色、性能、预算或应用场景，可在当前会话内继续补充。",
+      `本次候选数量：${selectedCount}`,
       `当前主题：${session.brief.theme}`
     ],
     layoutIntent: {
@@ -307,23 +422,20 @@ function createClosingSlide(session) {
 }
 
 export function buildPptSpec(session) {
-  const selected =
-    session.selectedIds.length > 0
-      ? session.candidates.filter((item) => session.selectedIds.includes(item.id))
-      : session.candidates.slice(0, 2);
+  const selected = selectCandidates(session);
+  const slides = [
+    createCoverSlide(session, selected),
+    ...(session.sourceType === "pdf" ? [createMoodboardSlide(session, selected)] : []),
+    createSummarySlide(session, selected),
+    createColorSlide(session, selected),
+    ...createComparisonSlides(selected),
+    ...createShowcaseSlides(session, selected),
+    createClosingSlide(session)
+  ].filter(Boolean);
 
   return parsePptSpec({
     title: normalizeProposalTitle(session.brief.theme),
     subject: "Material proposal",
-    slides: [
-      createCoverSlide(session, selected),
-      createNarrativeSlide(session, selected),
-      createColorSlide(session, selected),
-      createComparisonSlide(selected),
-      ...selected.map((candidate, index) =>
-        createShowcaseSlide(session, candidate, index)
-      ),
-      createClosingSlide(session)
-    ].filter(Boolean)
+    slides
   });
 }

@@ -77,6 +77,10 @@ function getPaletteAssets(slideSpec) {
   return (slideSpec.assets || []).filter((asset) => asset.type === "palette_chip");
 }
 
+function getDensity(slideSpec, fallback = "medium") {
+  return slideSpec.layoutIntent?.density || fallback;
+}
+
 function addImage(slide, asset, opts = {}) {
   if (!asset?.path) {
     return;
@@ -169,16 +173,16 @@ function renderCoverSlide(pptx, slide, slideSpec) {
     charSpace: 2
   });
   addTitle(slide, slideSpec.title, slideSpec.subtitle, {
-    x: 0.75,
+    x: hero ? 0.75 : 1.15,
     y: 1.45,
-    w: 5.6,
+    w: hero ? 5.6 : 8.8,
     h: 1,
     fontSize: 28
   });
   addBodyText(slide, slideSpec.body.join("\n"), {
-    x: 0.8,
+    x: hero ? 0.8 : 1.2,
     y: 2.95,
-    w: 4.6,
+    w: hero ? 4.6 : 6.8,
     h: 1.7,
     fontSize: 14,
     color: "5B524A"
@@ -252,12 +256,27 @@ function renderMoodboardSlide(pptx, slide, slideSpec) {
     "fabric_swatch"
   ]).slice(0, 4);
 
-  const frames = [
-    { x: 0.72, y: 1.55, w: 2.55, h: 4.55 },
-    { x: 3.5, y: 1.15, w: 2.45, h: 2.95 },
-    { x: 6.2, y: 1.55, w: 2.55, h: 4.55 },
-    { x: 8.95, y: 0.95, w: 3.2, h: 2.25 }
-  ];
+  const density = getDensity(slideSpec, "medium");
+  const frames =
+    assets.length <= 1
+      ? [{ x: 0.8, y: 1.55, w: 5.1, h: 4.85 }]
+      : assets.length === 2
+        ? [
+            { x: 0.8, y: 1.55, w: 3.7, h: 4.85 },
+            { x: 4.75, y: 1.2, w: 3.7, h: 3.2 }
+          ]
+        : density === "dense"
+          ? [
+              { x: 0.72, y: 1.55, w: 2.55, h: 4.55 },
+              { x: 3.5, y: 1.15, w: 2.45, h: 2.95 },
+              { x: 6.2, y: 1.55, w: 2.55, h: 4.55 },
+              { x: 8.95, y: 0.95, w: 3.2, h: 2.25 }
+            ]
+          : [
+              { x: 0.8, y: 1.55, w: 3.15, h: 4.4 },
+              { x: 4.15, y: 1.2, w: 3.15, h: 3.0 },
+              { x: 7.5, y: 1.55, w: 3.15, h: 4.4 }
+            ];
 
   assets.forEach((asset, index) => {
     addImage(slide, asset, { ...frames[index], contain: true });
@@ -267,14 +286,17 @@ function renderMoodboardSlide(pptx, slide, slideSpec) {
     slideSpec.textBlocks?.find((item) => item.role === "body")?.content ||
     slideSpec.body.join("；");
   addBodyText(slide, summary, {
-    x: 8.95,
-    y: 3.55,
-    w: 3.1,
-    h: 2.1,
+    x: assets.length <= 2 ? 8.8 : 8.95,
+    y: assets.length <= 2 ? 1.6 : 3.55,
+    w: assets.length <= 2 ? 3.2 : 3.1,
+    h: assets.length <= 2 ? 3.6 : 2.1,
     fontSize: 12,
     color: "4C453F"
   });
-  addPaletteChips(pptx, slide, getPaletteAssets(slideSpec), { x: 8.95, y: 6.15 });
+  addPaletteChips(pptx, slide, getPaletteAssets(slideSpec), {
+    x: 8.95,
+    y: assets.length <= 2 ? 5.95 : 6.15
+  });
 }
 
 function renderColorReferenceSlide(pptx, slide, slideSpec) {
@@ -291,31 +313,41 @@ function renderColorReferenceSlide(pptx, slide, slideSpec) {
     "mood_image",
     "hero_model"
   ]).slice(0, 3);
-  const widths = [3.35, 3.35, 4.35];
-  let cursorX = 0.8;
-  visuals.forEach((asset, index) => {
-    addImage(slide, asset, {
-      x: cursorX,
-      y: 1.55,
-      w: widths[index],
-      h: 3.45,
+  if (visuals.length === 1) {
+    addImage(slide, visuals[0], {
+      x: 7.5,
+      y: 1.25,
+      w: 4.5,
+      h: 4.2,
       contain: true
     });
-    cursorX += widths[index] + 0.18;
-  });
+  } else if (visuals.length > 1) {
+    const widths = visuals.length === 2 ? [4.1, 4.1] : [3.35, 3.35, 4.35];
+    let cursorX = 0.8;
+    visuals.forEach((asset, index) => {
+      addImage(slide, asset, {
+        x: cursorX,
+        y: 1.55,
+        w: widths[index],
+        h: 3.45,
+        contain: true
+      });
+      cursorX += widths[index] + 0.18;
+    });
+  }
 
   const palette = getPaletteAssets(slideSpec);
   addPaletteChips(pptx, slide, palette, {
     x: 0.85,
-    y: 5.45,
+    y: visuals.length === 0 ? 2.1 : 5.45,
     size: 0.34,
     gap: 0.16
   });
   addBodyText(slide, slideSpec.body.join("\n"), {
     x: 0.85,
-    y: 5.95,
+    y: visuals.length === 0 ? 2.7 : 5.95,
     w: 8,
-    h: 0.85,
+    h: visuals.length === 0 ? 1.2 : 0.85,
     fontSize: 12
   });
 }
@@ -335,19 +367,31 @@ function renderComparisonBoardSlide(slide, slideSpec) {
     "hero_model",
     "fabric_swatch"
   ]).slice(0, 4);
-  const positions = [
-    { x: 0.8, y: 1.45 },
-    { x: 3.95, y: 1.45 },
-    { x: 7.1, y: 1.45 },
-    { x: 10.25, y: 1.45 }
-  ];
+  const positions =
+    assets.length <= 2
+      ? [
+          { x: 0.9, y: 1.45, w: 5.2, h: 3.9 },
+          { x: 6.4, y: 1.45, w: 5.2, h: 3.9 }
+        ]
+      : assets.length === 3
+        ? [
+            { x: 0.8, y: 1.45, w: 3.85, h: 3.65 },
+            { x: 4.8, y: 1.15, w: 3.15, h: 2.85 },
+            { x: 8.15, y: 1.45, w: 3.85, h: 3.65 }
+          ]
+        : [
+            { x: 0.8, y: 1.45, w: 2.6, h: 3.35 },
+            { x: 3.95, y: 1.45, w: 2.6, h: 3.35 },
+            { x: 7.1, y: 1.45, w: 2.6, h: 3.35 },
+            { x: 10.25, y: 1.45, w: 2.6, h: 3.35 }
+          ];
 
   assets.forEach((asset, index) => {
     addImage(slide, asset, {
       x: positions[index].x,
       y: positions[index].y,
-      w: 2.6,
-      h: 3.35,
+      w: positions[index].w,
+      h: positions[index].h,
       contain: true,
       caption: true
     });
@@ -355,9 +399,9 @@ function renderComparisonBoardSlide(slide, slideSpec) {
 
   addBullets(slide, slideSpec.body, {
     x: 0.8,
-    y: 5.25,
-    w: 8.6,
-    h: 1.1,
+    y: assets.length <= 2 ? 5.75 : 5.25,
+    w: 10.8,
+    h: 1.3,
     fontSize: 11
   });
 }
@@ -383,10 +427,10 @@ function renderFabricShowcaseSlide(pptx, slide, slideSpec) {
   }
 
   slide.addText(slideSpec.body.join("\n"), {
-    x: 7.45,
+    x: swatch ? 7.45 : 0.9,
     y: 1.7,
-    w: 4.65,
-    h: 3.85,
+    w: swatch ? 4.65 : 10.8,
+    h: swatch ? 3.85 : 4.2,
     fontFace: "Aptos",
     fontSize: 13,
     color: "3E3832",
@@ -394,7 +438,10 @@ function renderFabricShowcaseSlide(pptx, slide, slideSpec) {
     valign: "top",
     margin: 0
   });
-  addPaletteChips(pptx, slide, getPaletteAssets(slideSpec), { x: 7.45, y: 6.05 });
+  addPaletteChips(pptx, slide, getPaletteAssets(slideSpec), {
+    x: swatch ? 7.45 : 0.9,
+    y: 6.05
+  });
 }
 
 function renderClosingSlide(slide, slideSpec) {
