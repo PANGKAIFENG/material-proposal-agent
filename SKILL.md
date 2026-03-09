@@ -76,8 +76,16 @@ Core env vars:
 - `MPA_OPENAI_API_KEY`
 - `MPA_OPENAI_BASE_URL` if using an OpenAI-compatible gateway
 - `MPA_CHAT_MODEL`
-- `MPA_IMAGE_MODEL` or `MPA_IMAGE_API_URL`
+- `MPA_IMAGE_PROVIDER`
+- `MPA_IMAGE_API_KEY`
+- `MPA_IMAGE_MODEL`
 - `MPA_STATE_DIR`
+
+Recommended image setup for OpenClaw:
+
+- `MPA_IMAGE_PROVIDER=geekai`
+- `MPA_IMAGE_API_KEY=<your geekai token>`
+- `MPA_IMAGE_MODEL=<the chosen image model>`
 
 If no model or image API is configured, the CLI falls back to heuristic brief extraction and SVG placeholder candidate images so the demo can still run.
 

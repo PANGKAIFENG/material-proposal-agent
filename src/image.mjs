@@ -97,20 +97,160 @@ async function savePlaceholder(assetPath, candidate) {
   };
 }
 
-async function callCustomImageApi(prompt) {
-  const config = getConfig();
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function buildImageHeaders(config) {
   const headers = { "content-type": "application/json" };
   if (config.imageApiKey) {
     headers.authorization = `Bearer ${config.imageApiKey}`;
   }
+  return headers;
+}
 
+function normalizeImageResult(data) {
+  const payload =
+    data?.data?.[0]?.b64_json ||
+    data?.data?.[0]?.image_base64 ||
+    data?.image_base64 ||
+    data?.result?.data?.[0]?.b64_json ||
+    data?.result?.data?.[0]?.image_base64 ||
+    "";
+  const url =
+    data?.data?.[0]?.url ||
+    data?.url ||
+    data?.result?.data?.[0]?.url ||
+    data?.result?.url ||
+    "";
+  const taskId = data?.task_id || data?.id || data?.taskId || "";
+  const taskStatus =
+    data?.task_status ||
+    data?.status ||
+    data?.task?.status ||
+    data?.result?.task_status ||
+    "";
+  const errorMessage =
+    data?.error?.message ||
+    data?.error_message ||
+    data?.message ||
+    "";
+
+  return {
+    b64: payload,
+    url,
+    taskId,
+    taskStatus,
+    errorMessage
+  };
+}
+
+async function pollGeekAiResult(taskId) {
+  const config = getConfig();
+  const startedAt = Date.now();
+  const endpoint = `${config.imageResultBaseUrl.replace(/\/$/, "")}/images/${taskId}`;
+
+  while (Date.now() - startedAt < config.imagePollTimeoutMs) {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: config.imageApiKey
+        ? { authorization: `Bearer ${config.imageApiKey}` }
+        : {}
+    });
+
+    if (!response.ok) {
+      throw new Error(`GeekAI result lookup failed with ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = normalizeImageResult(data);
+    const status = String(result.taskStatus || "").toLowerCase();
+
+    if (result.b64 || result.url) {
+      return result;
+    }
+
+    if (["succeed", "succeeded", "success", "completed", "done"].includes(status)) {
+      return result;
+    }
+
+    if (["failed", "error", "cancelled", "canceled"].includes(status)) {
+      throw new Error(
+        `GeekAI task ${taskId} failed with status ${status}${
+          result.errorMessage ? `: ${result.errorMessage}` : ""
+        }`
+      );
+    }
+
+    await sleep(config.imagePollIntervalMs);
+  }
+
+  throw new Error(`GeekAI task ${taskId} timed out`);
+}
+
+async function callGeekAiImageApi(prompt) {
+  const config = getConfig();
+  const endpoint = `${config.imageBaseUrl.replace(/\/$/, "")}/images/generations`;
+  const body = {
+    model: config.imageModel,
+    prompt,
+    size: config.imageSize,
+    aspect_ratio: config.imageAspectRatio,
+    quality: config.imageQuality,
+    response_format: config.imageResponseFormat,
+    output_format: config.imageOutputFormat,
+    async: config.imageAsync,
+    retries: config.imageRetries
+  };
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: buildImageHeaders(config),
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    throw new Error(`GeekAI image API failed with ${response.status}`);
+  }
+
+  const data = await response.json();
+  const result = normalizeImageResult(data);
+  const status = String(result.taskStatus || "").toLowerCase();
+
+  if (result.b64 || result.url) {
+    return result;
+  }
+
+  if (result.errorMessage && ["failed", "error"].includes(status)) {
+    throw new Error(result.errorMessage);
+  }
+
+  if (
+    result.taskId &&
+    (config.imageAsync ||
+      ["queued", "pending", "processing", "running", "submitted"].includes(status))
+  ) {
+    return pollGeekAiResult(result.taskId);
+  }
+
+  return result;
+}
+
+async function callCustomImageApi(prompt) {
+  const config = getConfig();
   const response = await fetch(config.imageApiUrl, {
     method: "POST",
-    headers,
+    headers: buildImageHeaders(config),
     body: JSON.stringify({
       model: config.imageModel,
       prompt,
-      size: "1024x1024"
+      size: config.imageSize,
+      aspect_ratio: config.imageAspectRatio,
+      quality: config.imageQuality,
+      response_format: config.imageResponseFormat,
+      output_format: config.imageOutputFormat
     })
   });
 
@@ -119,14 +259,7 @@ async function callCustomImageApi(prompt) {
   }
 
   const data = await response.json();
-  const payload =
-    data?.data?.[0]?.b64_json ||
-    data?.data?.[0]?.image_base64 ||
-    data?.image_base64 ||
-    "";
-  const url = data?.data?.[0]?.url || data?.url || "";
-
-  return { b64: payload, url };
+  return normalizeImageResult(data);
 }
 
 async function savePngFromB64(assetPath, payload) {
@@ -161,7 +294,21 @@ async function renderOneCandidate(sessionId, candidate) {
   const config = getConfig();
 
   try {
-    if (config.imageApiUrl) {
+    if (config.imageProvider === "geekai" && config.imageApiKey) {
+      const result = await callGeekAiImageApi(candidate.prompt);
+      if (result.b64) {
+        return savePngFromB64(pngPath, result.b64);
+      }
+      if (result.url) {
+        return saveFromUrl(pngPath, result.url);
+      }
+    }
+
+    if (
+      (config.imageProvider === "custom" ||
+        (config.imageProvider === "auto" && config.imageApiUrl)) &&
+      config.imageApiUrl
+    ) {
       const result = await callCustomImageApi(candidate.prompt);
       if (result.b64) {
         return savePngFromB64(pngPath, result.b64);
@@ -171,11 +318,15 @@ async function renderOneCandidate(sessionId, candidate) {
       }
     }
 
-    if (client && config.openAiApiKey) {
+    if (
+      (config.imageProvider === "openai" || config.imageProvider === "auto") &&
+      client &&
+      config.openAiApiKey
+    ) {
       const result = await client.images.generate({
         model: config.imageModel,
         prompt: candidate.prompt,
-        size: "1024x1024"
+        size: config.imageSize
       });
       const item = result.data?.[0];
       if (item?.b64_json) {
