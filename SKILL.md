@@ -16,6 +16,19 @@ Use the bundled CLI. Keep the workflow session-based so the same Feishu thread c
 - Supports Feishu-friendly selection via short IDs such as `A1 A3`
 - Exports a PPT proposal with the selected candidates
 
+## PDF handling rule
+
+When the runtime model already supports PDF understanding, prefer that native capability over local OCR or heavy parsing.
+
+Use the skill to constrain:
+
+- what must be extracted from the PDF
+- how the result maps into the material brief
+- when clarification questions are required
+- how candidate generation and PPT export should proceed
+
+Use the bundled local PDF extraction only as a fallback outside multimodal runtimes.
+
 ## Quick workflow
 
 1. Start a session from text:
@@ -29,6 +42,8 @@ material-proposal-agent start --input-text "我想做一组适合夏季瑜伽服
 ```bash
 material-proposal-agent start --pdf /absolute/path/to/trend.pdf
 ```
+
+In OpenClaw-like multimodal runtimes, you may instead let the model inspect the PDF directly and then continue with the same brief structure and downstream steps.
 
 3. If the output says `clarification_needed`, ask the user the listed question(s), then continue:
 
@@ -106,3 +121,7 @@ How to push the repo to GitHub and install it into OpenClaw/OpenCloud.
 ### `references/architecture.md`
 
 Shared session model, command flow, and output objects.
+
+### `references/pdf-analysis.md`
+
+Read when the runtime can inspect PDFs natively and you need the expected output contract and prompting constraints.
