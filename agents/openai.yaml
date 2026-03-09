@@ -1,0 +1,5 @@
+version: 1
+interface:
+  display_name: Material Proposal Agent
+  short_description: Analyze fabric needs, generate candidate material images, and export a proposal PPT.
+  default_prompt: Analyze the user's material request or PDF, ask only necessary clarification questions, generate a few candidate directions with short IDs, and build the final PPT after selection.
