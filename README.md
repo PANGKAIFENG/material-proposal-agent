@@ -108,8 +108,9 @@ MPA_PPT_TEMPLATE_PATH=/absolute/path/to/client-template.pptx
 The renderer then works in this order:
 
 1. Build a `PPTSpec` from the current session
-2. Try to fill the client template through `pptx-automizer`
-3. If the template is missing required slides or placeholders, fall back to dynamic generation with `PptxGenJS`
+2. Prefer the rule-driven layout renderer for the current MDL-inspired slide system
+3. Use `pptx-automizer` only when the deck remains in the legacy `cover / summary / candidate / closing` template-compatible mode
+4. If template filling is not applicable or fails, fall back to dynamic generation with `PptxGenJS`
 
 Default template slide mapping:
 
@@ -239,7 +240,8 @@ See:
 - [scripts/material-proposal-agent.mjs](./scripts/material-proposal-agent.mjs): CLI entrypoint
 - [src/pipeline.mjs](./src/pipeline.mjs): workflow orchestration
 - [src/image.mjs](./src/image.mjs): image provider adapters
-- [src/ppt.mjs](./src/ppt.mjs): PPT export
+- [src/ppt-spec.mjs](./src/ppt-spec.mjs): rule-driven slide planning
+- [src/ppt.mjs](./src/ppt.mjs): PPT rendering
 - [references/setup.md](./references/setup.md): environment details
 
 ## Current scope
