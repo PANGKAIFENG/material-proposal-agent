@@ -8,12 +8,14 @@
   },
   "scripts": {
     "cli": "node ./scripts/material-proposal-agent.mjs",
-    "help": "node ./scripts/material-proposal-agent.mjs help"
+    "help": "node ./scripts/material-proposal-agent.mjs help",
+    "sample-template": "node ./scripts/create-sample-template.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
     "openai": "^5.12.2",
     "pdf.js-extract": "^0.2.1",
+    "pptx-automizer": "^0.8.1",
     "pptxgenjs": "^3.12.0",
     "zod": "^3.25.76"
   },

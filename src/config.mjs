@@ -31,6 +31,21 @@ export function getConfig() {
     imagePollTimeoutMs: Number(
       process.env.MPA_IMAGE_POLL_TIMEOUT_MS || "120000"
     ),
+    pptTemplatePath: process.env.MPA_PPT_TEMPLATE_PATH || "",
+    pptTemplateCoverSlide: Number(
+      process.env.MPA_PPT_TEMPLATE_COVER_SLIDE || "1"
+    ),
+    pptTemplateSummarySlide: Number(
+      process.env.MPA_PPT_TEMPLATE_SUMMARY_SLIDE || "2"
+    ),
+    pptTemplateCandidateSlide: Number(
+      process.env.MPA_PPT_TEMPLATE_CANDIDATE_SLIDE || "3"
+    ),
+    pptTemplateClosingSlide: Number(
+      process.env.MPA_PPT_TEMPLATE_CLOSING_SLIDE || "4"
+    ),
+    pptTemplateImageElement:
+      process.env.MPA_PPT_TEMPLATE_IMAGE_ELEMENT || "candidateImage",
     stateDir:
       process.env.MPA_STATE_DIR ||
       path.join(os.homedir(), ".material-proposal-agent", "sessions"),

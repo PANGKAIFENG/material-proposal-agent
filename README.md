@@ -55,6 +55,16 @@ Then you can call:
 material-proposal-agent help
 ```
 
+### Create a starter PPT template
+
+If the client does not yet have a programmable template, generate a starter template first:
+
+```bash
+node ./scripts/create-sample-template.mjs ./output/sample-template.pptx
+```
+
+This creates a four-slide template that follows the default template conventions used by the project.
+
 ## Configuration
 
 Create a `.env` file from the example:
@@ -86,6 +96,47 @@ Relevant vendor docs:
 
 - [图片生成](https://docs.geekai.co/cn/api/image/generations)
 - [生成结果查询](https://docs.geekai.co/cn/api/image/result)
+
+### PPT template rendering
+
+If a client already has a `.pptx` template, set:
+
+```bash
+MPA_PPT_TEMPLATE_PATH=/absolute/path/to/client-template.pptx
+```
+
+The renderer then works in this order:
+
+1. Build a `PPTSpec` from the current session
+2. Try to fill the client template through `pptx-automizer`
+3. If the template is missing required slides or placeholders, fall back to dynamic generation with `PptxGenJS`
+
+Default template slide mapping:
+
+- slide 1: cover
+- slide 2: summary
+- slide 3: candidate
+- slide 4: closing
+
+Default candidate image placeholder element name:
+
+- `candidateImage`
+
+Default text placeholders used by the starter template:
+
+- `{{coverTitle}}`
+- `{{coverAudience}}`
+- `{{coverUseCases}}`
+- `{{coverDate}}`
+- `{{summaryTitle}}`
+- `{{summarySummary}}`
+- `{{summaryLeft}}`
+- `{{summaryRight}}`
+- `{{candidateTitle}}`
+- `{{candidateDescription}}`
+- `{{candidateBullets}}`
+- `{{closingTitle}}`
+- `{{closingBody}}`
 
 ## CLI usage
 

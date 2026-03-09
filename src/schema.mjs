@@ -38,6 +38,21 @@ export const CandidateSchema = z.object({
   provider: z.string().default("placeholder")
 });
 
+export const PptSlideSchema = z.object({
+  slideType: z.enum(["cover", "summary", "candidate", "closing"]),
+  title: z.string().default(""),
+  subtitle: z.string().default(""),
+  body: z.array(z.string()).default([]),
+  imagePath: z.string().default(""),
+  notes: z.record(z.string()).default({})
+});
+
+export const PptSpecSchema = z.object({
+  title: z.string(),
+  subject: z.string().default("Material proposal"),
+  slides: z.array(PptSlideSchema)
+});
+
 export const SessionSchema = z.object({
   sessionId: z.string(),
   createdAt: z.string(),
@@ -76,4 +91,8 @@ export function parseBrief(value) {
 
 export function parseSession(value) {
   return SessionSchema.parse(value);
+}
+
+export function parsePptSpec(value) {
+  return PptSpecSchema.parse(value);
 }

@@ -39,6 +39,12 @@ cp assets/material-proposal-agent.env.example .env
 - `MPA_IMAGE_RETRIES`: Retries sent to the image provider
 - `MPA_IMAGE_POLL_INTERVAL_MS`: Poll interval for async image jobs
 - `MPA_IMAGE_POLL_TIMEOUT_MS`: Poll timeout for async image jobs
+- `MPA_PPT_TEMPLATE_PATH`: Optional client `.pptx` template path
+- `MPA_PPT_TEMPLATE_COVER_SLIDE`: Cover slide number in the template
+- `MPA_PPT_TEMPLATE_SUMMARY_SLIDE`: Summary slide number in the template
+- `MPA_PPT_TEMPLATE_CANDIDATE_SLIDE`: Candidate slide number in the template
+- `MPA_PPT_TEMPLATE_CLOSING_SLIDE`: Closing slide number in the template
+- `MPA_PPT_TEMPLATE_IMAGE_ELEMENT`: Candidate image placeholder shape name
 - `MPA_STATE_DIR`: Where session files are stored. Defaults to `~/.material-proposal-agent/sessions`
 - `MPA_DEFAULT_COUNT`: Default number of generated candidates
 
@@ -53,6 +59,27 @@ MPA_IMAGE_MODEL=gpt-image-1
 ```
 
 The code already knows how to submit image jobs to GeekAI and poll task results.
+
+## PPT template recommendation
+
+If the client already has a branded `.pptx` template, configure:
+
+```bash
+MPA_PPT_TEMPLATE_PATH=/absolute/path/to/template.pptx
+```
+
+If the client has no reusable template yet, generate a starter one:
+
+```bash
+node ./scripts/create-sample-template.mjs ./output/sample-template.pptx
+```
+
+The current default template convention expects four slide types:
+
+- cover
+- summary
+- candidate
+- closing
 
 ## Fallback behavior
 

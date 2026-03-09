@@ -1,6 +1,12 @@
 import path from "node:path";
+import Automizer, {
+  ModifyImageHelper,
+  modify
+} from "pptx-automizer";
 import PptxGenJS from "pptxgenjs";
+import { getConfig } from "./config.mjs";
 import { ensureDir } from "./fs-utils.mjs";
+import { buildPptSpec } from "./ppt-spec.mjs";
 
 function addTitle(slide, title, subtitle = "") {
   slide.addText(title, {
@@ -43,14 +49,12 @@ function addBullets(slide, items, opts = {}) {
   );
 }
 
-export async function exportPpt(session, outputPath) {
-  await ensureDir(path.dirname(outputPath));
-
+function createFallbackPptx(spec) {
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = "material-proposal-agent";
-  pptx.subject = "Material proposal";
-  pptx.title = `${session.brief.theme}提案`;
+  pptx.subject = spec.subject;
+  pptx.title = spec.title;
   pptx.company = "OpenClaw";
   pptx.lang = "zh-CN";
   pptx.theme = {
@@ -59,100 +63,76 @@ export async function exportPpt(session, outputPath) {
     lang: "zh-CN"
   };
 
-  const selected =
-    session.selectedIds.length > 0
-      ? session.candidates.filter((item) => session.selectedIds.includes(item.id))
-      : session.candidates.slice(0, 2);
+  return pptx;
+}
 
-  {
+async function renderWithPptxGenJs(spec, outputPath) {
+  const pptx = createFallbackPptx(spec);
+
+  for (const slideSpec of spec.slides) {
     const slide = pptx.addSlide();
+    if (slideSpec.slideType === "cover") {
+      slide.background = { color: "F7F2E7" };
+      slide.addText(slideSpec.title, {
+        x: 0.7,
+        y: 1.2,
+        w: 8.8,
+        h: 0.8,
+        fontFace: "Aptos",
+        fontSize: 28,
+        bold: true,
+        color: "143534"
+      });
+      slideSpec.body.forEach((line, index) => {
+        slide.addText(line, {
+          x: 0.7,
+          y: 2.15 + index * 0.4,
+          w: 7.4,
+          h: 0.35,
+          fontSize: index === slideSpec.body.length - 1 ? 12 : 15,
+          color: "47615D"
+        });
+      });
+      continue;
+    }
+
+    if (slideSpec.slideType === "summary") {
+      slide.background = { color: "FFFDF7" };
+      addTitle(slide, slideSpec.title, slideSpec.subtitle);
+      addBullets(slide, slideSpec.body.slice(0, 6));
+      addBullets(slide, slideSpec.body.slice(6), {
+        x: 6.0,
+        y: 1.4,
+        w: 6.4,
+        h: 2.8
+      });
+      continue;
+    }
+
+    if (slideSpec.slideType === "candidate") {
+      slide.background = { color: "FFFDF7" };
+      addTitle(slide, slideSpec.title, slideSpec.subtitle);
+      if (slideSpec.imagePath) {
+        slide.addImage({
+          path: slideSpec.imagePath,
+          x: 0.7,
+          y: 1.5,
+          w: 6.0,
+          h: 4.8,
+          contain: true
+        });
+      }
+      addBullets(slide, slideSpec.body, {
+        x: 7.0,
+        y: 1.7,
+        w: 5.5,
+        h: 4.4
+      });
+      continue;
+    }
+
     slide.background = { color: "F7F2E7" };
-    slide.addText(`${session.brief.theme}面料提案`, {
-      x: 0.7,
-      y: 1.2,
-      w: 8.8,
-      h: 0.8,
-      fontFace: "Aptos",
-      fontSize: 28,
-      bold: true,
-      color: "143534"
-    });
-    slide.addText(`受众：${session.brief.audience}`, {
-      x: 0.7,
-      y: 2.15,
-      w: 5.2,
-      h: 0.4,
-      fontSize: 15,
-      color: "47615D"
-    });
-    slide.addText(`用途：${session.brief.useCases.join(" / ") || "未指定"}`, {
-      x: 0.7,
-      y: 2.55,
-      w: 6.4,
-      h: 0.4,
-      fontSize: 15,
-      color: "47615D"
-    });
-    slide.addText(new Date().toLocaleDateString("zh-CN"), {
-      x: 0.7,
-      y: 3.2,
-      w: 2.4,
-      h: 0.35,
-      fontSize: 12,
-      color: "47615D"
-    });
-  }
-
-  {
-    const slide = pptx.addSlide();
-    slide.background = { color: "FFFDF7" };
-    addTitle(slide, "需求与策略摘要", session.brief.summary);
-    addBullets(slide, [
-      `主题：${session.brief.theme}`,
-      `材质方向：${session.brief.materialDirection.join("、") || "待明确"}`,
-      `色彩：${session.brief.colorPalette.join("、") || "待明确"}`,
-      `肌理与整理：${session.brief.textureAndFinish.join("、") || "待明确"}`,
-      `性能：${session.brief.performance.join("、") || "待明确"}`,
-      `预算：${session.brief.budget || "未指定"}`
-    ]);
-    addBullets(
-      slide,
-      [
-        `风格关键词：${session.brief.styleKeywords.join("、") || "未指定"}`,
-        `约束：${session.brief.constraints.join("、") || "未指定"}`,
-        `排除项：${session.brief.exclusions.join("、") || "无"}`
-      ],
-      { x: 6.0, y: 1.4, w: 6.4, h: 2.8 }
-    );
-  }
-
-  for (const candidate of selected) {
-    const slide = pptx.addSlide();
-    slide.background = { color: "FFFDF7" };
-    addTitle(slide, candidate.title, candidate.description);
-    slide.addImage({
-      path: candidate.imagePath,
-      x: 0.7,
-      y: 1.5,
-      w: 6.0,
-      h: 4.8,
-      contain: true
-    });
-    addBullets(
-      slide,
-      [
-        `编号：${candidate.id}`,
-        ...candidate.sellingPoints,
-        `提示词摘要：${candidate.prompt.slice(0, 120)}...`
-      ],
-      { x: 7.0, y: 1.7, w: 5.5, h: 4.4 }
-    );
-  }
-
-  {
-    const slide = pptx.addSlide();
-    slide.background = { color: "F7F2E7" };
-    slide.addText("感谢查看", {
+    slide.addText(slideSpec.title, {
       x: 0.7,
       y: 1.3,
       w: 4,
@@ -162,11 +142,11 @@ export async function exportPpt(session, outputPath) {
       bold: true,
       color: "143534"
     });
-    slide.addText("如需继续细化颜色、性能或预算区间，可在当前会话内继续补充。", {
+    slide.addText(slideSpec.body.join("\n"), {
       x: 0.7,
       y: 2.1,
       w: 6.8,
-      h: 0.5,
+      h: 0.8,
       fontSize: 16,
       color: "47615D"
     });
@@ -174,4 +154,89 @@ export async function exportPpt(session, outputPath) {
 
   await pptx.writeFile({ fileName: outputPath });
   return outputPath;
+}
+
+async function renderWithTemplate(spec, outputPath) {
+  const config = getConfig();
+  const templatePath = config.pptTemplatePath;
+
+  if (!templatePath) {
+    return renderWithPptxGenJs(spec, outputPath);
+  }
+
+  const templateDir = path.dirname(templatePath);
+  const templateName = path.basename(templatePath);
+  const outputDir = path.dirname(outputPath);
+  const outputName = path.basename(outputPath);
+
+  const automizer = new Automizer({
+    templateDir,
+    outputDir,
+    mediaDir: "/",
+    removeExistingSlides: true,
+    autoImportSlideMasters: true,
+    cleanup: true,
+    verbosity: 0
+  });
+
+  let pres = automizer.loadRoot(templateName).load(templateName, "template");
+  const mediaToLoad = new Set(
+    spec.slides
+      .map((slide) => slide.imagePath)
+      .filter(Boolean)
+  );
+
+  for (const imagePath of mediaToLoad) {
+    pres = pres.loadMedia(path.basename(imagePath), path.dirname(imagePath));
+  }
+
+  for (const slideSpec of spec.slides) {
+    const templateSlideNumber =
+      slideSpec.slideType === "cover"
+        ? config.pptTemplateCoverSlide
+        : slideSpec.slideType === "summary"
+          ? config.pptTemplateSummarySlide
+          : slideSpec.slideType === "candidate"
+            ? config.pptTemplateCandidateSlide
+            : config.pptTemplateClosingSlide;
+
+    pres = pres.addSlide("template", templateSlideNumber, (slide) => {
+      const notes = slideSpec.notes || {};
+      for (const [tag, value] of Object.entries(notes)) {
+        slide.modifyElement(
+          tag,
+          modify.replaceText([
+            {
+              replace: tag,
+              by: {
+                text: value
+              }
+            }
+          ])
+        );
+      }
+
+      if (slideSpec.slideType === "candidate" && slideSpec.imagePath) {
+        slide.modifyElement(config.pptTemplateImageElement, [
+          ModifyImageHelper.setRelationTargetCover(
+            path.basename(slideSpec.imagePath),
+            pres
+          )
+        ]);
+      }
+    });
+  }
+
+  await pres.write(outputName);
+  return outputPath;
+}
+
+export async function exportPpt(session, outputPath) {
+  await ensureDir(path.dirname(outputPath));
+  const spec = buildPptSpec(session);
+  try {
+    return await renderWithTemplate(spec, outputPath);
+  } catch {
+    return renderWithPptxGenJs(spec, outputPath);
+  }
 }
