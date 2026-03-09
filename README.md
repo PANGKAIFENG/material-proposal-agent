@@ -216,6 +216,23 @@ Recommended production usage:
 6. Let the user choose by short IDs
 7. Export the PPT
 
+## Rule-driven layout direction
+
+The longer-term direction is not strict template filling for every client. It is a rule-driven layout system:
+
+1. derive a structured brief
+2. choose slide archetypes
+3. emit a semantic `PPTSpec`
+4. let the renderer place content according to layout rules
+
+This is a better fit for fabric proposal workflows because asset count, image ratio, and asset type are often unstable.
+
+See:
+
+- [references/ppt-layout-system.md](./references/ppt-layout-system.md)
+- [references/pptspec-v2.md](./references/pptspec-v2.md)
+- [examples/mdl-inspired-layout.json](./examples/mdl-inspired-layout.json)
+
 ## Key files
 
 - [SKILL.md](./SKILL.md): skill behavior and workflow

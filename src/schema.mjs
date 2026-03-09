@@ -38,13 +38,77 @@ export const CandidateSchema = z.object({
   provider: z.string().default("placeholder")
 });
 
+export const PptAssetSchema = z.object({
+  id: z.string(),
+  type: z.enum([
+    "logo",
+    "hero_model",
+    "mood_image",
+    "garment_cutout",
+    "fabric_swatch",
+    "detail_crop",
+    "palette_chip",
+    "reference_patch",
+    "sku_label",
+    "supporting_image"
+  ]),
+  path: z.string().default(""),
+  caption: z.string().default(""),
+  priority: z.enum(["primary", "secondary", "accent"]).default("secondary"),
+  aspectRatio: z.string().default(""),
+  tags: z.array(z.string()).default([])
+});
+
+export const PptTextBlockSchema = z.object({
+  role: z.enum([
+    "title",
+    "subtitle",
+    "body",
+    "caption",
+    "section_label",
+    "small_note",
+    "tagline"
+  ]),
+  content: z.string(),
+  emphasis: z.enum(["hero", "strong", "normal", "muted"]).default("normal")
+});
+
 export const PptSlideSchema = z.object({
-  slideType: z.enum(["cover", "summary", "candidate", "closing"]),
+  slideType: z.enum([
+    "cover",
+    "summary",
+    "candidate",
+    "closing",
+    "inspiration_moodboard",
+    "color_reference",
+    "fabric_showcase",
+    "comparison_board"
+  ]),
   title: z.string().default(""),
   subtitle: z.string().default(""),
   body: z.array(z.string()).default([]),
   imagePath: z.string().default(""),
-  notes: z.record(z.string()).default({})
+  notes: z.record(z.string()).default({}),
+  layoutIntent: z
+    .object({
+      visualFocus: z
+        .enum(["hero_story", "fabric_texture", "color_story", "product_mix"])
+        .default("hero_story"),
+      density: z.enum(["light", "medium", "dense"]).default("medium"),
+      composition: z
+        .enum([
+          "centered_cover",
+          "left_text_right_image",
+          "collage_with_copy",
+          "split_story",
+          "grid_showcase",
+          "banded_color_story"
+        ])
+        .default("left_text_right_image")
+    })
+    .optional(),
+  assets: z.array(PptAssetSchema).default([]),
+  textBlocks: z.array(PptTextBlockSchema).default([])
 });
 
 export const PptSpecSchema = z.object({

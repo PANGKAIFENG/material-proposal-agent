@@ -1,0 +1,181 @@
+{
+  "title": "MDL 风格面料提案",
+  "subject": "Material proposal",
+  "slides": [
+    {
+      "slideType": "cover",
+      "title": "Presentation For MDL",
+      "subtitle": "2024-12",
+      "layoutIntent": {
+        "visualFocus": "hero_story",
+        "density": "light",
+        "composition": "centered_cover"
+      },
+      "assets": [
+        {
+          "id": "cover-hero-1",
+          "type": "hero_model",
+          "path": "assets/example/hero-model.png",
+          "priority": "primary",
+          "aspectRatio": "portrait"
+        },
+        {
+          "id": "cover-detail-1",
+          "type": "detail_crop",
+          "path": "assets/example/fabric-detail.png",
+          "priority": "secondary",
+          "aspectRatio": "square"
+        },
+        {
+          "id": "cover-chip-1",
+          "type": "palette_chip",
+          "path": "",
+          "caption": "#1f1712",
+          "priority": "accent"
+        }
+      ],
+      "textBlocks": [
+        {
+          "role": "title",
+          "content": "Presentation For MDL",
+          "emphasis": "hero"
+        },
+        {
+          "role": "subtitle",
+          "content": "2024-12",
+          "emphasis": "muted"
+        }
+      ],
+      "notes": {
+        "pageFamily": "cover"
+      }
+    },
+    {
+      "slideType": "inspiration_moodboard",
+      "title": "INSPIRATION",
+      "subtitle": "Sherpa and faux fur bring warmth and texture.",
+      "layoutIntent": {
+        "visualFocus": "hero_story",
+        "density": "dense",
+        "composition": "collage_with_copy"
+      },
+      "assets": [
+        {
+          "id": "insp-1",
+          "type": "mood_image",
+          "path": "assets/example/look-1.png",
+          "priority": "primary",
+          "aspectRatio": "portrait"
+        },
+        {
+          "id": "insp-2",
+          "type": "mood_image",
+          "path": "assets/example/look-2.png",
+          "priority": "secondary",
+          "aspectRatio": "portrait"
+        },
+        {
+          "id": "insp-3",
+          "type": "fabric_swatch",
+          "path": "assets/example/swatch-1.png",
+          "priority": "secondary",
+          "aspectRatio": "square"
+        }
+      ],
+      "textBlocks": [
+        {
+          "role": "section_label",
+          "content": "INSPIRATION",
+          "emphasis": "strong"
+        },
+        {
+          "role": "body",
+          "content": "Combine warm tactile surfaces with compact silhouettes and winter-friendly neutral tones.",
+          "emphasis": "normal"
+        }
+      ],
+      "notes": {
+        "pageFamily": "moodboard"
+      }
+    },
+    {
+      "slideType": "fabric_showcase",
+      "title": "What do we have",
+      "subtitle": "Recycled brushed knit and sherpa references",
+      "layoutIntent": {
+        "visualFocus": "fabric_texture",
+        "density": "medium",
+        "composition": "split_story"
+      },
+      "assets": [
+        {
+          "id": "fabric-1",
+          "type": "fabric_swatch",
+          "path": "assets/example/fabric-1.png",
+          "priority": "primary",
+          "aspectRatio": "landscape"
+        },
+        {
+          "id": "fabric-2",
+          "type": "detail_crop",
+          "path": "assets/example/detail-1.png",
+          "priority": "secondary",
+          "aspectRatio": "circle"
+        },
+        {
+          "id": "garment-1",
+          "type": "garment_cutout",
+          "path": "assets/example/garment-1.png",
+          "priority": "secondary",
+          "aspectRatio": "portrait"
+        }
+      ],
+      "textBlocks": [
+        {
+          "role": "title",
+          "content": "What do we have",
+          "emphasis": "hero"
+        },
+        {
+          "role": "body",
+          "content": "高密刷毛针织结构，适合秋冬外套与套装，颜色建议围绕棕咖和烟灰。",
+          "emphasis": "normal"
+        },
+        {
+          "role": "small_note",
+          "content": "推荐结合圆形细节裁切和 3-4 个配色点。",
+          "emphasis": "muted"
+        }
+      ],
+      "notes": {
+        "pageFamily": "showcase"
+      }
+    },
+    {
+      "slideType": "closing",
+      "title": "Thank you",
+      "subtitle": "",
+      "layoutIntent": {
+        "visualFocus": "hero_story",
+        "density": "light",
+        "composition": "centered_cover"
+      },
+      "assets": [],
+      "textBlocks": [
+        {
+          "role": "title",
+          "content": "Thank you",
+          "emphasis": "hero"
+        },
+        {
+          "role": "body",
+          "content": "期待进一步细化颜色、成分、克重与应用场景。",
+          "emphasis": "normal"
+        }
+      ],
+      "notes": {
+        "pageFamily": "closing"
+      }
+    }
+  ]
+}
